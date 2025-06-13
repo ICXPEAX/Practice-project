@@ -9,22 +9,24 @@ function Main() {
   useEffect(() => {
     const fetchRecentLogs = async () => {
       try {
-        const data = await logService.getRecentLogs()
-        setRecentLogs(data)
+        setLoading(true);
+        const data = await logService.getRecentLogs(4);
+        setRecentLogs(data);
       } catch (error) {
-        console.error('Failed to fetch logs:', error)
+        console.error('Failed to fetch logs:', error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
     
-    fetchRecentLogs()
-  }, [])
+    fetchRecentLogs();
+  }, []);
 
   return (
     <>
       <div className='menuMain'> 
         <p className='mainInfoText'>Последние логи</p>
+        
         {loading ? (
           <div className='logsMain'>
             <p className='logsText'>Загрузка...</p>
@@ -33,8 +35,13 @@ function Main() {
           recentLogs.map((log, index) => (
             <div key={index} className='logsMain'>
               <p className='logsText'>
-                {log.datetime} - {log.type}: {log.info} - 
-                {log.check ? ' Успешно' : ' Ошибка'}
+                <strong>{log.datetime}</strong> - {log.type}: {log.info}
+              </p>
+              <p className='logsText'>
+                {log.input} → {log.output} ({log.size} байт)
+              </p>
+              <p className='logsText' style={{ color: log.check ? 'green' : 'red' }}>
+                {log.check ? 'Успешно' : 'Ошибка'}
               </p>
             </div>
           ))
@@ -44,6 +51,7 @@ function Main() {
           </div>
         )}
       </div>
+      
       <div className='mainInfo'>
         <div className='mainInfoWhite'>
           <div className='textMain'>Информация</div>

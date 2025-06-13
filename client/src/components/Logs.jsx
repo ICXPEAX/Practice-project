@@ -5,8 +5,6 @@ import logService from '../api/logService'
 function Logs() {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
-  const [typeFilter, setTypeFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
   const [isAddingLog, setIsAddingLog] = useState(false)
   const [newLog, setNewLog] = useState({
     type: 'info',
@@ -16,46 +14,68 @@ function Logs() {
     size: '',
     check: true
   })
-
-  // Загрузка логов
-  useEffect(() => {
-    const fetchLogs = async () => {
-      try {
-        const data = await logService.getAllLogs()
-        setLogs(data)
-      } catch (error) {
-        console.error('Failed to fetch logs:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    
-    fetchLogs()
-  }, [])
-
-  // Фильтрация логов
-  const filteredLogs = logs.filter(log => {
-    const typeMatch = typeFilter === 'all' || log.type === typeFilter
-    const statusMatch = statusFilter === 'all' || 
-                      (statusFilter === 'success' && log.check) || 
-                      (statusFilter === 'error' && !log.check)
-    return typeMatch && statusMatch
+  
+  const [filters, setFilters] = useState({
+    datetime: '',
+    type: 'all',
+    input: '',
+    output: '',
+    minSize: '',
+    maxSize: '',
+    success: 'all'
   })
-
-  // Обработчики изменения фильтров
-  const handleTypeFilterChange = (e) => {
-    setTypeFilter(e.target.value)
+  
+  // Загрузка логов с фильтрами
+  const fetchLogs = async () => {
+    setLoading(true)
+    try {
+      const params = {}
+      
+      if (filters.datetime) params.datetime = filters.datetime
+      if (filters.type !== 'all') params.type = filters.type
+      if (filters.input) params.input = filters.input
+      if (filters.output) params.output = filters.output
+      if (filters.minSize) params.min_size = filters.minSize
+      if (filters.maxSize) params.max_size = filters.maxSize
+      if (filters.success !== 'all') {
+        params.success = filters.success === 'success' ? '1' : '0'
+      }
+      
+      const data = await logService.getAllLogs(params)
+      setLogs(data)
+    } catch (error) {
+      console.error('Ошибка загрузки логов:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleStatusFilterChange = (e) => {
-    setStatusFilter(e.target.value)
+  useEffect(() => {
+    fetchLogs()
+  }, [filters])
+
+  // Обработчики фильтров
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target
+    setFilters(prev => ({ ...prev, [name]: value }))
   }
 
-  // Открытие/закрытие формы добавления
+  const handleResetFilters = () => {
+    setFilters({
+      datetime: '',
+      type: 'all',
+      input: '',
+      output: '',
+      minSize: '',
+      maxSize: '',
+      success: 'all'
+    })
+  }
+
+  // Управление формой добавления
   const openAddForm = () => setIsAddingLog(true)
   const closeAddForm = () => setIsAddingLog(false)
 
-  // Обработчик изменений в форме
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
     setNewLog(prev => ({
@@ -64,20 +84,17 @@ function Logs() {
     }))
   }
 
-  // Отправка новой записи
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      await logService.createLog({
+      const createdLog = await logService.createLog({
         ...newLog,
-        size: parseInt(newLog.size) // Преобразуем в число
+        size: parseInt(newLog.size)
       })
       
-      // Обновляем список логов
-      const data = await logService.getAllLogs()
-      setLogs(data)
+      // Добавляем новый лог в начало списка
+      setLogs(prev => [createdLog, ...prev])
       
-      // Закрываем форму и сбрасываем данные
       closeAddForm()
       setNewLog({
         type: 'info',
@@ -90,8 +107,8 @@ function Logs() {
       
       alert('Лог успешно добавлен!')
     } catch (error) {
-      console.error('Failed to add log:', error)
-      alert('Ошибка при добавлении лога')
+      console.error('Ошибка добавления лога:', error)
+      alert('Ошибка при добавлении лога: ' + (error.response?.data?.error || error.message))
     }
   }
 
@@ -102,118 +119,193 @@ function Logs() {
         await logService.deleteLog(id)
         setLogs(logs.filter(log => log.id !== id))
       } catch (error) {
-        console.error('Failed to delete log:', error)
+        console.error('Ошибка удаления:', error)
       }
     }
   }
 
   return (
-    <>
-      <div className='LogsBg'>
-        <p className='mainInfoText'>Архив логов</p>
-        <div className='FilterLogs'>
-          <p className='textMain'>Фильтр</p>
-          <div className='ButtomFilter' style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+    <div className="logs-page">
+      <div className="logs-header">
+        <h1 className="page-title">Архив логов</h1>
+      </div>
+      
+      <div className="filters-section">
+        <h2 className="section-title">Фильтры</h2>
+        
+        <div className="filters-grid">
+          <div className="filter-group">
+            <label>Дата и время</label>
+            <input
+              type="text"
+              name="datetime"
+              value={filters.datetime}
+              onChange={handleFilterChange}
+              placeholder="дд/мм/гггг"
+            />
+          </div>
+          
+          <div className="filter-group">
+            <label>Тип</label>
             <select 
-              value={typeFilter} 
-              onChange={handleTypeFilterChange}
-              style={{ fontSize: '20px', padding: '5px', borderRadius: '10px' }}
+              name="type" 
+              value={filters.type}
+              onChange={handleFilterChange}
             >
               <option value="all">Все типы</option>
               <option value="info">Информация</option>
               <option value="error">Ошибка</option>
               <option value="warning">Предупреждение</option>
             </select>
-            
+          </div>
+          
+          <div className="filter-group">
+            <label>Статус</label>
             <select 
-              value={statusFilter} 
-              onChange={handleStatusFilterChange}
-              style={{ fontSize: '20px', padding: '5px', borderRadius: '10px' }}
+              name="success" 
+              value={filters.success}
+              onChange={handleFilterChange}
             >
               <option value="all">Все статусы</option>
               <option value="success">Успешно</option>
               <option value="error">Ошибка</option>
             </select>
-            
-            <button 
-              onClick={openAddForm}
-              className='buttonConfig'
-              style={{ fontSize: '20px', padding: '5px 15px' }}
-            >
-              Добавить лог
-            </button>
+          </div>
+          
+          <div className="filter-group">
+            <label>Входной файл</label>
+            <input
+              type="text"
+              name="input"
+              value={filters.input}
+              onChange={handleFilterChange}
+              placeholder="Путь к файлу"
+            />
+          </div>
+          
+          <div className="filter-group">
+            <label>Выходной файл</label>
+            <input
+              type="text"
+              name="output"
+              value={filters.output}
+              onChange={handleFilterChange}
+              placeholder="Путь к файлу"
+            />
+          </div>
+          
+          <div className="filter-group">
+            <label>Размер (байты)</label>
+            <div className="size-range">
+              <input
+                type="number"
+                name="minSize"
+                value={filters.minSize}
+                onChange={handleFilterChange}
+                placeholder="Мин."
+                min="0"
+              />
+              <span>-</span>
+              <input
+                type="number"
+                name="maxSize"
+                value={filters.maxSize}
+                onChange={handleFilterChange}
+                placeholder="Макс."
+                min="0"
+              />
+            </div>
           </div>
         </div>
         
+        <div className="filter-buttons">
+          <button 
+            className="reset-btn"
+            onClick={handleResetFilters}
+          >
+            Сбросить фильтры
+          </button>
+          
+          <button 
+            className="add-btn"
+            onClick={openAddForm}
+          >
+            Добавить лог
+          </button>
+        </div>
+      </div>
+      
+      <div className="logs-section">
         {loading ? (
-          <div className='Logs'>
-            <p className='textLog'>Загрузка...</p>
+          <div className="loading-indicator">
+            <div className="spinner"></div>
+            <p>Загрузка данных...</p>
           </div>
-        ) : filteredLogs.length > 0 ? (
-          filteredLogs.map(log => (
-            <div key={log.id} className='Logs'>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 20px' }}>
-                <div>
-                  <p className='textLog'>{log.datetime} - {log.type}</p>
-                  <p className='textLog'>Input: {log.input}</p>
-                  <p className='textLog'>Output: {log.output}</p>
-                  <p className='textLog'>Info: {log.info}</p>
-                  <p className='textLog'>Size: {log.size} bytes</p>
-                  <p className='textLog'>Status: {log.check ? 'Success' : 'Error'}</p>
+        ) : logs.length > 0 ? (
+          <div className="logs-container">
+            {logs.map(log => (
+              <div key={log.id} className="log-card">
+                <div className="log-header">
+                  <div className="log-meta">
+                    <span className="log-date">{log.datetime}</span>
+                    <span className={`log-type ${log.type}`}>{log.type}</span>
+                  </div>
+                  <button 
+                    className="delete-btn"
+                    onClick={() => handleDelete(log.id)}
+                  >
+                    Удалить
+                  </button>
                 </div>
-                <button 
-                  onClick={() => handleDelete(log.id)}
-                  style={{ 
-                    background: 'red', 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '5px', 
-                    padding: '5px 15px',
-                    cursor: 'pointer',
-                    alignSelf: 'center'
-                  }}
-                >
-                  Удалить
-                </button>
+                
+                <div className="log-details">
+                  <div className="log-path">
+                    <span className="path-label">Input:</span>
+                    <span className="path-value">{log.input}</span>
+                  </div>
+                  <div className="log-path">
+                    <span className="path-label">Output:</span>
+                    <span className="path-value">{log.output}</span>
+                  </div>
+                  <div className="log-info">
+                    <span className="info-label">Info:</span>
+                    <span className="info-value">{log.info}</span>
+                  </div>
+                </div>
+                
+                <div className="log-footer">
+                  <div className="size-info">
+                    <span>Size:</span>
+                    <span className="size-value">{log.size.toLocaleString()} байт</span>
+                  </div>
+                  <div className={`status-info ${log.check ? 'success' : 'error'}`}>
+                    <span className="check-label">Check:</span>
+                    <span className="check-value">{log.check ? '1' : '0'}</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         ) : (
-          <div className='Logs'>
-            <p className='textLog'>Нет данных для отображения</p>
+          <div className="no-data">
+            <p>Нет данных для отображения</p>
           </div>
         )}
       </div>
 
       {/* Модальное окно для добавления лога */}
       {isAddingLog && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            padding: '20px',
-            borderRadius: '40px',
-            width: '600px'
-          }}>
-            <h2 style={{ textAlign: 'center', fontSize: '30px' }}>Добавить новый лог</h2>
-            <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '15px' }}>
-              <div>
-                <label style={{ fontSize: '25px' }}>Тип:</label>
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Добавить новый лог</h2>
+            
+            <form onSubmit={handleSubmit} className="add-log-form">
+              <div className="form-group">
+                <label>Тип:</label>
                 <select 
                   name="type" 
                   value={newLog.type}
                   onChange={handleInputChange}
-                  style={{ fontSize: '25px', width: '100%', padding: '5px' }}
                   required
                 >
                   <option value="info">Информация</option>
@@ -222,95 +314,75 @@ function Logs() {
                 </select>
               </div>
 
-              <div>
-                <label style={{ fontSize: '25px' }}>Входной файл:</label>
+              <div className="form-group">
+                <label>Input:</label>
                 <input
                   type="text"
                   name="input"
                   value={newLog.input}
                   onChange={handleInputChange}
                   placeholder="/path/to/input/file.txt"
-                  style={{ fontSize: '25px', width: '100%', padding: '5px' }}
                   required
                 />
               </div>
 
-              <div>
-                <label style={{ fontSize: '25px' }}>Выходной файл:</label>
+              <div className="form-group">
+                <label>Output:</label>
                 <input
                   type="text"
                   name="output"
                   value={newLog.output}
                   onChange={handleInputChange}
                   placeholder="/path/to/output/file.txt"
-                  style={{ fontSize: '25px', width: '100%', padding: '5px' }}
                   required
                 />
               </div>
 
-              <div>
-                <label style={{ fontSize: '25px' }}>Информация:</label>
+              <div className="form-group">
+                <label>Info:</label>
                 <textarea
                   name="info"
                   value={newLog.info}
                   onChange={handleInputChange}
                   placeholder="Описание операции"
-                  style={{ fontSize: '25px', width: '100%', padding: '5px', height: '100px' }}
                   required
                 />
               </div>
 
-              <div>
-                <label style={{ fontSize: '25px' }}>Размер (байты):</label>
+              <div className="form-group">
+                <label>Size:</label>
                 <input
                   type="number"
                   name="size"
                   value={newLog.size}
                   onChange={handleInputChange}
-                  style={{ fontSize: '25px', width: '100%', padding: '5px' }}
                   min="0"
                   required
                 />
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div className="form-checkbox">
                 <input
                   type="checkbox"
                   name="check"
                   checked={newLog.check}
                   onChange={handleInputChange}
-                  style={{ width: '30px', height: '30px', marginRight: '10px' }}
                 />
-                <label style={{ fontSize: '25px' }}>Успешное выполнение</label>
+                <label>Check (успешное выполнение)</label>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
+              <div className="form-buttons">
                 <button 
                   type="submit"
-                  style={{ 
-                    background: 'green', 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '40px', 
-                    padding: '10px 30px',
-                    fontSize: '25px',
-                    cursor: 'pointer'
-                  }}
+                  className="submit-btn"
                 >
                   Добавить
                 </button>
+                
                 <button 
                   type="button" 
+                  className="cancel-btn"
                   onClick={closeAddForm}
-                  style={{ 
-                    background: 'red', 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '40px', 
-                    padding: '10px 30px',
-                    fontSize: '25px',
-                    cursor: 'pointer'
-                  }}
                 >
                   Отмена
                 </button>
@@ -319,7 +391,7 @@ function Logs() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }
 

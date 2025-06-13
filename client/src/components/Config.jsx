@@ -20,9 +20,6 @@ function Config() {
                   <p className='configText'>Arg:</p>
                 </div>
         </div>
-        
-        
-
     </div>
     </>
   )

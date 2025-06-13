@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "axios": "^1.9.0",
+    "flask": "^0.2.10",
     "mobx": "^6.13.7",
     "mobx-react-lite": "^4.1.0",
     "react": "^19.1.0",

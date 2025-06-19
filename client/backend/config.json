@@ -1,0 +1,11 @@
+[
+  {
+    "input": "/home/input/file.txt",
+    "output": "/home/output/file.txt",
+    "args": [
+      "HASH",
+      "DELETE"
+    ],
+    "id": "b7b99e18-6241-4a0b-be9a-874cc598ca0e"
+  }
+]

@@ -9,56 +9,89 @@ function Main() {
   useEffect(() => {
     const fetchRecentLogs = async () => {
       try {
-        setLoading(true);
-        const data = await logService.getRecentLogs(4);
-        setRecentLogs(data);
+        setLoading(true)
+        const data = await logService.getRecentLogs(4)
+        setRecentLogs(data)
       } catch (error) {
-        console.error('Failed to fetch logs:', error);
+        console.error('Ошибка загрузки логов:', error)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
     }
     
-    fetchRecentLogs();
-  }, []);
+    fetchRecentLogs()
+  }, [])
 
   return (
-    <>
-      <div className='menuMain'> 
-        <p className='mainInfoText'>Последние логи</p>
+    <div className="main-page">
+      <div className="menuMain">
+        <h2 className="last-logs">Последние логи</h2>
         
         {loading ? (
-          <div className='logsMain'>
-            <p className='logsText'>Загрузка...</p>
+          <div className="loading-indicator">
+            <div className="spinner"></div>
+            <p>Загрузка данных...</p>
           </div>
         ) : recentLogs.length > 0 ? (
-          recentLogs.map((log, index) => (
-            <div key={index} className='logsMain'>
-              <p className='logsText'>
-                <strong>{log.datetime}</strong> - {log.type}: {log.info}
-              </p>
-              <p className='logsText'>
-                {log.input} → {log.output} ({log.size} байт)
-              </p>
-              <p className='logsText' style={{ color: log.check ? 'green' : 'red' }}>
-                {log.check ? 'Успешно' : 'Ошибка'}
-              </p>
-            </div>
-          ))
+          <div className="logs-container">
+            {recentLogs.map(log => (
+              <div key={log.id} className="log-card">
+                <div className="log-header">
+                  <div className="log-meta">
+                    <span className="log-date">{log.datetime}</span>
+                    <span className={`log-type ${log.type}`}>{log.type}</span>
+                  </div>
+                </div>
+                
+                <div className="log-details">
+                  <div className="log-info">
+                    <span className="info-value">{log.info}</span>
+                  </div>
+                  <div className="log-path">
+                    <span className="path-label">From:</span>
+                    <span className="path-value">{log.input}</span>
+                  </div>
+                  <div className="log-path">
+                    <span className="path-label">To:</span>
+                    <span className="path-value">{log.output}</span>
+                  </div>
+                </div>
+                
+                <div className="log-footer">
+                  <div className="size-info">
+                    <span>Size:</span>
+                    <span className="size-value">{log.size.toLocaleString()} байт</span>
+                  </div>
+                  <div className={`status-info ${log.check ? 'success' : 'error'}`}>
+                    <span className="check-value">
+                      {log.check ? 'Успешно' : 'Ошибка'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
-          <div className='logsMain'>
-            <p className='logsText'>Нет данных</p>
+          <div className="no-data">
+            <p>Нет данных для отображения</p>
           </div>
         )}
       </div>
       
-      <div className='mainInfo'>
-        <div className='mainInfoWhite'>
-          <div className='textMain'>Информация</div>
-          <div className='textMain'>Возможная инструкция о том, как пользоваться сайтом</div>
+      <div className="mainInfo">
+        <div className="mainInfoWhite">
+          <h2 className="section-title">Информация</h2>
+          <div className="info-content">
+            <p>Инструкция по использованию системы:</p>
+            <ul>
+              <li>Для просмотра всех логов перейдите в раздел "Логи"</li>
+              <li>Настройте пути обработки файлов в разделе "Конфигурация"</li>
+              <li>Добавляйте новые логи через интерфейс архива логов</li>
+            </ul>
+          </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 

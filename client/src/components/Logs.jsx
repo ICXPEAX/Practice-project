@@ -127,7 +127,7 @@ function Logs() {
   return (
     <div className="logs-page">
       <div className="logs-header">
-        <h1 className="page-title">Архив логов</h1>
+        <p className="page-title">Архив логов</p>
       </div>
       
       <div className="filters-section">
@@ -293,7 +293,7 @@ function Logs() {
         )}
       </div>
 
-      {/* Модальное окно для добавления лога */}
+  
       {isAddingLog && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -374,14 +374,14 @@ function Logs() {
               <div className="form-buttons">
                 <button 
                   type="submit"
-                  className="submit-btn"
+                  className=".logs-buttom"
                 >
                   Добавить
                 </button>
                 
                 <button 
                   type="button" 
-                  className="cancel-btn"
+                  className=".logs-buttom"
                   onClick={closeAddForm}
                 >
                   Отмена

@@ -80,7 +80,7 @@ function Main() {
       
       <div className="mainInfo">
         <div className="mainInfoWhite">
-          <h2 className="section-title">Информация</h2>
+          <p className="section-title">Информация</p>
           <div className="info-content">
             <p>Инструкция по использованию системы:</p>
             <ul>

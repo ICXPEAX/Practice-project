@@ -195,12 +195,12 @@ function Config() {
             </div>
             
             <div className="form-buttons">
-              <button type="submit" className="submit-btn">
+              <button type="submit" className="logs-buttom">
                 {editingId ? 'Обновить' : 'Добавить'}
               </button>
               <button 
                 type="button" 
-                className="cancel-btn"
+                className="logs-buttom"
                 onClick={handleCancel}
               >
                 Отмена

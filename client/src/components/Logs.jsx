@@ -374,14 +374,14 @@ function Logs() {
               <div className="form-buttons">
                 <button 
                   type="submit"
-                  className=".logs-buttom"
+                  className="logs-buttom"
                 >
                   Добавить
                 </button>
                 
                 <button 
                   type="button" 
-                  className=".logs-buttom"
+                  className="logs-buttom"
                   onClick={closeAddForm}
                 >
                   Отмена
